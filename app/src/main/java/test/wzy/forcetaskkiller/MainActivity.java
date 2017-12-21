@@ -32,7 +32,7 @@ public class MainActivity extends Activity {
         if (upgradeRootPermission(getPackageCodePath())){
             init();
         } else {
-            Toast.makeText(this, "获取root权限失败", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "need root permission!", Toast.LENGTH_SHORT).show();
         }
     }
 
