@@ -5,6 +5,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.view.View;
 import android.widget.AdapterView;
@@ -23,6 +24,10 @@ public class MainActivity extends Activity {
     private ListView mAppsListView;
     private ArrayAdapter<String> mAdapter;
     private ActivityManager am;
+    private WorkThread mWorkThread;
+
+    private final int MSG_KILL = 0;
+    private final int MSG_FRESH = 1;
 
 
     @Override
@@ -43,25 +48,39 @@ public class MainActivity extends Activity {
         mAdapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1);
         mAppsListView.setAdapter(mAdapter);
 
+        mWorkThread = new WorkThread();
+        mWorkThread.start();
+
         mAppsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 String pkgName =(String) ((TextView)view).getText();
-                WorkThread thread = new WorkThread(pkgName);
-                thread.start();
+                Message msg = new Message();
+                msg.what = MSG_KILL;
+                msg.obj = pkgName;
+                mWorkThread.workHandler.sendMessage(msg);
             }
         });
-    }
 
+        freshList();
+    }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        freshList();
-
-
+    protected void onDestroy() {
+        if(mWorkThread!=null) {
+            mWorkThread.workHandler.getLooper().quit();
+        }
+        super.onDestroy();
     }
 
+    private Handler uiHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            if(msg.what == MSG_FRESH){
+                freshList();
+            }
+        }
+    };
 
     private void freshList(){
         //String[] mPkgNames = execRootCmd("dumpsys activity p | grep trm:'.*[a-z]*\\..*' | grep -o '[a-z]*\\..*\\.[a-z]*'").split("\r\n");
@@ -79,39 +98,27 @@ public class MainActivity extends Activity {
         mAdapter.notifyDataSetChanged();
     }
 
-    private Handler uiHandler = new Handler(){
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what){
-                case 1:
-                    freshList();
-                    break;
-            }
-        }
-    };
-
-
-
     private class WorkThread extends Thread{
-        private String pkg;
-        public WorkThread(String name){pkg = name;}
+        public Handler workHandler;
 
         @Override
         public void run() {
-            try {
-                am.killBackgroundProcesses(pkg);
-                execRootCmd("am force-stop "+pkg);
-                Message msg = new Message();
-                msg.what = 1;
-                uiHandler.sendMessage(msg);
-            }
-            catch (Exception e){}
-            finally {}
+            Looper.prepare();
+            workHandler = new Handler(){
+                public void handleMessage (Message msg) {
+                    if(msg.what == MSG_KILL){
+                        String pkg = (String)msg.obj;
+                        am.killBackgroundProcesses(pkg);
+                        execRootCmd("am force-stop "+pkg);
+                        Message msg2UI = new Message();
+                        msg2UI.what = MSG_FRESH;
+                        uiHandler.sendMessage(msg2UI);
+                    }
+                }
+            };
+            Looper.loop();
         }
     }
-
-
-
 
 
 

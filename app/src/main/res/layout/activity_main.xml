@@ -8,24 +8,35 @@
     <ListView
         android:id="@+id/app_list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/bottom_panel"
+        />
 
     <LinearLayout
+        android:id="@+id/bottom_panel"
         android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone">
 
         <Button
+            android:id="@+id/btn_kill_selected"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            />
+            android:textAllCaps="false"
+            android:text="Kill Selected"
+            android:textColor="@color/colorAccent"/>
 
         <Button
+        android:id="@+id/btn_kill_unselected"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_weight="1"/>
+        android:layout_weight="1"
+        android:textAllCaps="false"
+        android:text="Kill Unselected"
+        android:textColor="@color/colorAccent"/>
 
 
     </LinearLayout>
